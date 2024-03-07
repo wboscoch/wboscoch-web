@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Demo: Make a healthy food finder with the Tilequery API</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
+    <link
+      href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css"
+      type="text/css"
+    />
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.js'></script>
+    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css' type='text/css'
+    />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+
+      .info-box {
+  position: absolute;
+  margin: 20px;
+  width: 25%;
+  top: 0;
+  bottom: 20px;
+  padding: 20px;
+  background-color: #fff;
+  overflow-y: scroll;
+}
+
+      
+    </style>
+
+
+
+
+  </head>
+
+  <body>
+    
+    <div id="map"></div>
+    <script>
+      mapboxgl.accessToken = 'pk.eyJ1Ijoid2Jvc2NvY2giLCJhIjoiY2xzeWF3cHhyMGMydDJxbzJjbnI3dmZjdSJ9.5ftVvYZFrbDXLrWfyi6mGA';
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/wboscoch/cltgpcysb00wb01raa5x3g3xs',
+        center: [-123.137, 49.247],
+        zoom: 11
+      });
+
+
+
+      
+      
+      const draw = new MapboxDraw({
+  // Instead of showing all the draw tools, show only the line string and delete tools.
+  displayControlsDefault: false,
+  controls: {
+    line_string: true,
+    trash: true
+  },
+  // Set the draw mode to draw LineStrings by default.
+  defaultMode: 'draw_line_string',
+  styles: [
+    // Set the line style for the user-input coordinates.
+    {
+      id: 'gl-draw-line',
+      type: 'line',
+      filter: ['all', ['==', '$type', 'LineString'], ['!=', 'mode', 'static']],
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
+      paint: {
+        'line-color': '#438EE4',
+        'line-dasharray': [0.2, 2],
+        'line-width': 4,
+        'line-opacity': 0.7
+      }
+    },
+    // Style the vertex point halos.
+    {
+      id: 'gl-draw-polygon-and-line-vertex-halo-active',
+      type: 'circle',
+      filter: [
+        'all',
+        ['==', 'meta', 'vertex'],
+        ['==', '$type', 'Point'],
+        ['!=', 'mode', 'static']
+      ],
+      paint: {
+        'circle-radius': 12,
+        'circle-color': '#FFF'
+      }
+    },
+    // Style the vertex points.
+    {
+      id: 'gl-draw-polygon-and-line-vertex-active',
+      type: 'circle',
+      filter: [
+        'all',
+        ['==', 'meta', 'vertex'],
+        ['==', '$type', 'Point'],
+        ['!=', 'mode', 'static']
+      ],
+      paint: {
+        'circle-radius': 8,
+        'circle-color': '#438EE4'
+      }
+    }
+  ]
+});
+
+
+
+
+// Add the draw tool to the map.
+map.addControl(draw);
+
+
+
+
+
+
+
+
+      map.on('load', () => {
+        const geocoder = new MapboxGeocoder({
+          accessToken: mapboxgl.accessToken,
+          mapboxgl: mapboxgl,
+          zoom: 13,
+          placeholder: 'Enter an address or place name',
+          bbox: [-123.27,49.195,-123.020,49.315]
+        });
+
+        map.addControl(geocoder, 'top-left');
+
+        const marker = new mapboxgl.Marker({
+          'color': '#008000'
+        });
+
+        geocoder.on('result', async (event) => {
+          const point = event.result.center;
+          const tileset = 'wboscoch.5noqugbv';
+          const radius = 1610;
+          const limit = 50;
+          marker.setLngLat(point).addTo(map);
+          const query = await fetch(
+            `https://api.mapbox.com/v4/${tileset}/tilequery/${point[0]},${point[1]}.json?radius=${radius}&limit=${limit}&access_token=${mapboxgl.accessToken}`,
+            { method: 'GET' }
+          );
+          const json = await query.json();
+          map.getSource('tilequery').setData(json);
+        });
+
+        map.addSource('tilequery', {
+          type: 'geojson',
+          data: {
+            'type': 'FeatureCollection',
+            'features': []
+          }
+        });
+
+        map.addLayer({
+          id: 'tilequery-points',
+          type: 'circle',
+          source: 'tilequery',
+          paint: {
+            'circle-stroke-color': 'white',
+            'circle-stroke-width': {
+              stops: [
+                [0, 0.1],
+                [18, 3]
+              ],
+              base: 5
+            },
+            'circle-radius': {
+              stops: [
+                [12, 5],
+                [22, 180]
+              ],
+              base: 5
+            },
+            'circle-color': [
+              'match',
+              ['get', 'provides_meals'],
+              'False',
+              '#FF0000',
+              'True',
+              '#9ACD32',
+              '#FF0000' // any other store type
+            ]
+          }
+        });
+
+        
+
+        const popup = new mapboxgl.Popup();
+
+        map.on('mouseenter', 'tilequery-points', (event) => {
+          map.getCanvas().style.cursor = 'pointer';
+          const properties = event.features[0].properties;
+          const obj = JSON.parse(properties.tilequery);
+          const coordinates = new mapboxgl.LngLat(
+            properties.longitude,
+            properties.latitude
+          );
+
+          const content = `<h3>${properties.program_name}</h3><h4>${
+            properties.organization_name
+          }</h4><h5>${
+            properties.description
+          }</h5><p>${properties.local_areas}</p><p>${(
+            obj.distance / 1609.344
+          ).toFixed(2)} mi. from location</p>`;
+
+          popup.setLngLat(coordinates).setHTML(content).addTo(map);
+        });
+
+        map.on('mouseleave', 'tilequery-points', () => {
+          map.getCanvas().style.cursor = '';
+          popup.remove();
+        });
+      });
+      
+      // Add zoom and rotation controls to the map.
+    map.addControl(new mapboxgl.NavigationControl());
+
+
+
+// Use the coordinates you drew to make the Map Matching API request
+function updateRoute() {
+  // Set the profile
+  const profile = 'driving';
+  // Get the coordinates that were drawn on the map
+  const data = draw.getAll();
+  const lastFeature = data.features.length - 1;
+  const coords = data.features[lastFeature].geometry.coordinates;
+  // Format the coordinates
+  const newCoords = coords.join(';');
+  // Set the radius for each coordinate pair to 25 meters
+  const radius = coords.map(() => 25);
+  getMatch(newCoords, radius, profile);
+}
+
+// Make a Map Matching request
+async function getMatch(coordinates, radius, profile) {
+  // Separate the radiuses with semicolons
+  const radiuses = radius.join(';');
+  // Create the query
+  const query = await fetch(
+    `https://api.mapbox.com/matching/v5/mapbox/${profile}/${coordinates}?geometries=geojson&radiuses=${radiuses}&steps=true&access_token=${mapboxgl.accessToken}`,
+    { method: 'GET' }
+  );
+  const response = await query.json();
+  // Handle errors
+  if (response.code !== 'Ok') {
+    alert(
+      `${response.code} - ${response.message}.\n\nFor more information: https://docs.mapbox.com/api/navigation/map-matching/#map-matching-api-errors`
+    );
+    return;
+  }
+  // Get the coordinates from the response
+  const coords = response.matchings[0].geometry;
+  console.log(coords);
+  // Code from the next step will go here
+}
+    
+
+map.on('draw.create', updateRoute);
+map.on('draw.update', updateRoute);
+
+
+// Draw the Map Matching route as a new layer on the map
+function addRoute(coords) {
+  // If a route is already loaded, remove it
+  if (map.getSource('route')) {
+    map.removeLayer('route');
+    map.removeSource('route');
+  } else {
+    // Add a new layer to the map
+    map.addLayer({
+      id: 'route',
+      type: 'line',
+      source: {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: coords
+        }
+      },
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#FFA500',
+        'line-width': 8,
+        'line-opacity': 0.8
+      }
+    });
+  }
+}
+
+// Make a Map Matching request
+async function getMatch(coordinates, radius, profile) {
+  // Separate the radiuses with semicolons
+  const radiuses = radius.join(';');
+  // Create the query
+  const query = await fetch(
+    `https://api.mapbox.com/matching/v5/mapbox/${profile}/${coordinates}?geometries=geojson&radiuses=${radiuses}&steps=true&access_token=${mapboxgl.accessToken}`,
+    { method: 'GET' }
+  );
+  const response = await query.json();
+  // Handle errors
+  if (response.code !== 'Ok') {
+    alert(
+      `${response.code} - ${response.message}.\n\nFor more information: https://docs.mapbox.com/api/navigation/map-matching/#map-matching-api-errors`
+    );
+    return;
+  }
+  const coords = response.matchings[0].geometry;
+  // Draw the route on the map
+  addRoute(coords);
+  getInstructions(response.matchings[0]);
+}
+
+function getInstructions(data) {
+  // Target the sidebar to add the instructions
+  const directions = document.getElementById('directions');
+  let tripDirections = '';
+  // Output the instructions for each step of each leg in the response object
+  for (const leg of data.legs) {
+    const steps = leg.steps;
+    for (const step of steps) {
+      tripDirections += `<li>${step.maneuver.instruction}</li>`;
+    }
+  }
+  directions.innerHTML = `<p><strong>Trip duration: ${Math.floor(
+    data.duration / 60
+  )} min.</strong></p><ol>${tripDirections}</ol>`;
+}
+
+    </script>
+
+    
+  </body>
+
+
+  <div class="info-box">
+    <p>Type your current location into the search box
+        
+    </p>
+
+<p>If the surrounding dot is Green, the food programme provides meals. 
+    If the surrounding dot is Red, the food programme DOES NOT provides meals </p>
+
+    <p>
+      Draw your route using the draw tools on the right. To get the most
+      accurate route match, draw points at regular intervals.
+    </p>
+    <p>Data source: City of Vancouver </p>
+    <div id="directions"></div>
+  </div>
+
+</html>
