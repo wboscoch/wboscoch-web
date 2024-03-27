@@ -1,17 +1,23 @@
-This is the README file for the URST 472 Lab 1 project.
+This is the README file for the URST 472 Lab 2 project.
 
-The link of the map is : https://ubc-geos472-spring2024.github.io/wbosco-web/Lab1/472Lab1.html
+The link of the map is : https://wboscoch.github.io/wboscoch-web/Lab 2/472Lab2.html
 
-Reflective analysis : 
+Reflective analysis :
 
-The purpose of this map is to demonstrate the availability of free and low-cost food options within Vancouver, enabling users to locate themselves, understand their surroundings, and access information about nearby free and low-cost food.
+Overall, the map focuses on representing libraries within Vancouver, enabling users on a tight budget to discover free and low-cost social resources nearby. This assists them in organizing their routes and plans around the libraries in their vicinity.
 
-The base map is designed in a dark-colored monochrome style with minimal information, allowing users to easily contrast the more important information. To enhance user experience, the locations of free and low-cost food are highlighted in a soft, low-contrast blue with white outline, drawing attention without disrupting the overall tone of the map. Meanwhile, the size of the food programmes are set to 5, allowing users to identify them even in far distances. 
+For the map interactions, when users hover over the library icon, a pop up with the name and exact location of the library will appear. If users would like to explore low-budget programs near the library, they can click on the library icon, and surrounding free or low-cost food programs, including meal services and affordable groceries within a 1-mile radius, will appear. Similarly, as users scroll through the dots, the name of the organization and a brief description of the program will appear. The icons representing free and low-cost food programs are divided into two colors: green signifies programs that provide meals, while red indicates those that do not. This information is also included in the descriptions of the programs.
 
-To further enhance the user experience, instructions have been provided alongside the map, explaining the meaning of the icons and how to use the map effectively. When users input their locations into the search bar, the map will immediately focus on their location and drop a pin, while highlighting nearby food programs within a 1-mile radius. These programs are color-coded, with green and red indicating the food programmes provide meals or not, helping users easily identify them. The 1-mile distance limit was chosen as it is more accessible for most people either on foot or drive. 
-
-While the food programs are highlighted, users can scroll through them, and detailed information will pop up, including the program names, organizations, detailed descriptions, and distances from the pinned locations. When users use the line tool to connect their current location with the surrounding food programs, the map will generate the most accessible driving route accordingly. The route line will be highlighted in orange, with a line width of 8 and an opacity of 0.8, ensuring contrast against the color black without disrupting the overall tone. When the route line is generated within the map, the trip duration and drive guidance with easy steps would also appear at the side of the map, allowing users to reach their destinations more easily. 
+To enhance users' experiences on the map, the left side also provides tools that enable users to interact with the map more effectively and customize their experiences. Users can set up their route by clicking on their current location and their destinations directly. Navigation directions will appear with estimated time of arrival and route length, along with step-by-step navigation instructions on the left side of the map. Additionally, users can choose their preferred travel methods, allowing the map to generate the most optimized path for them. Moreover, users can search their current locations by typing in the search box at the side of the map. The map will automatically mark and zoom to those destinations, and the surrounding free or low-cost food programs will also appear for users to plan their routes accordingly.
 
 Map critique session :
 
-When I showed the original map to a friend, he suggested that the light-colored chrome theme might be too bright, especially in dark areas like outdoors at night. He also felt that the colored zoning districts and labels lacked sufficient interaction with the food programs. To address user preferences, he recommended adding detailed information within the food program labels through pop-up displays. Additionally, he didn't see the necessity of representing latitude and longitude, given that road and street names are already present on the map. Visually, he favored the color blue because it reminded him of the 'default' states of the labels, which aren't too prominent yet still allow users to identify locations. He preferred reducing opacity to increase contrast.
+When I showed the original map to a friend, he believed that most people would use both the library and free or low-cost food programs during the daytime. Therefore, he suggested using a bright, light-colored theme for the map to better fit its presentation. Additionally, he suggested zooming in on the map slightly and scaling up the icon of the library for better recognition of the main purpose of the map. He also suggested highlighting the color of the water and parks for better visualization of the Vancouver border, and the existence of parks themselves as free social resources around the libraries
+
+Reference / Mapbox API used in map 
+
+https://docs.mapbox.com/mapbox-gl-js/example/mapbox-gl-directions/
+
+https://docs.mapbox.com/help/tutorials/tilequery-healthy-food-finder/
+
+https://docs.mapbox.com/mapbox-gl-js/example/third-party/
