@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Demo: Make a healthy food finder with the Tilequery API</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
+  <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css" type="text/css" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.2.0/mapbox-gl-directions.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.2.0/mapbox-gl-directions.css" type="text/css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script>
+  mapboxgl.accessToken = 'pk.eyJ1Ijoid2Jvc2NvY2giLCJhIjoiY2xzeWF3cHhyMGMydDJxbzJjbnI3dmZjdSJ9.5ftVvYZFrbDXLrWfyi6mGA';
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/wboscoch/cltzlocti01nm01r5bx358xa8',
+    center: [-123.137, 49.247],
+    zoom: 12
+  });
+
+  map.addControl(
+    new MapboxDirections({
+      accessToken: mapboxgl.accessToken
+    }),
+    'top-left'
+  );
+
+  let popup;
+
+  map.on('mouseenter', 'libraries-1cv4bq', (event) => {
+    const feature = event.features[0];
+    popup = new mapboxgl.Popup({ offset: [0, -15] })
+      .setLngLat(feature.geometry.coordinates)
+      .setHTML(
+        `<h3>${feature.properties.name}</h3><p>${feature.properties.address}</p>`
+      )
+      .addTo(map);
+  });
+
+  map.on('mouseleave', 'libraries-1cv4bq', () => {
+    if (popup) {
+      popup.remove();
+    }
+  });
+
+
+  map.on('click', 'libraries-1cv4bq', async (event) => {
+  const feature = event.features[0];
+  const point = feature.geometry.coordinates;
+  const tileset = 'wboscoch.dsvlgni2';
+  const radius = 1609; 
+  const limit = 10; 
+  const query = await fetch(
+    `https://api.mapbox.com/v4/${tileset}/tilequery/${point[0]},${point[1]}.json?radius=${radius}&limit=${limit}&access_token=${mapboxgl.accessToken}`,
+    { method: 'GET' }
+  );
+
+
+
+
+  const json = await query.json();
+  const tileQueryPoints = json.features;
+
+  // Clear existing markers before adding new ones
+  map.getSource('tilequery').setData({
+    type: 'FeatureCollection',
+    features: tileQueryPoints
+  });
+
+  
+  map.flyTo({ center: point });
+
+  // Zoom the map to an appropriate level to show the results
+  // You may adjust this zoom level as needed
+  map.zoomTo(12);
+});
+
+
+
+
+
+  map.on('load', () => {
+    const geocoder = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl,
+      zoom: 12,
+      placeholder: 'Enter an address or place name',
+      bbox: [-123.27,49.195,-123.020,49.315]
+    });
+    map.addControl(geocoder, 'top-left');
+    const marker = new mapboxgl.Marker({
+      'color': '#008000'
+    });
+    geocoder.on('result', async (event) => {
+      const point = event.result.center;
+      const tileset = 'wboscoch.dsvlgni2';
+      const radius = 1609;
+      const limit = 50;
+      marker.setLngLat(point).addTo(map);
+      const query = await fetch(
+        `https://api.mapbox.com/v4/${tileset}/tilequery/${point[0]},${point[1]}.json?radius=${radius}&limit=${limit}&access_token=${mapboxgl.accessToken}`,
+        { method: 'GET' }
+      );
+      const json = await query.json();
+      map.getSource('tilequery').setData(json);
+    });
+    map.addSource('tilequery', {
+      type: 'geojson',
+      data: {
+        'type': 'FeatureCollection',
+        'features': []
+      }
+    });
+    map.addLayer({
+      id: 'tilequery-points',
+      type: 'circle',
+      source: 'tilequery',
+      paint: {
+        'circle-stroke-color': 'white',
+        'circle-stroke-width': {
+          stops: [
+            [0, 0.1],
+            [18, 3]
+          ],
+          base: 5
+        },
+        'circle-radius': {
+          stops: [
+            [12, 5],
+            [22, 180]
+          ],
+          base: 5
+        },
+        'circle-color': [
+          'match',
+          ['get', 'provides_meals'],
+          'False',
+          '#FF0000',
+          'True',
+          '#9ACD32',
+          '#FF0000'
+        ]
+      }
+    });
+    map.addControl(new mapboxgl.NavigationControl());
+
+    
+
+
+    map.on('mouseenter', 'tilequery-points', (event) => {
+      const feature = event.features[0];
+      const description = feature.properties.description;
+      const programName = feature.properties.program_name;
+      const ProvidesMeals = feature.properties.provides_meals;
+      popup = new mapboxgl.Popup({ offset: [0, -15] })
+        .setLngLat(feature.geometry.coordinates)
+        .setHTML(`<p>ProgramName: ${programName}</p><p>Description: ${description}</p><p>ProvidesMeals: ${ProvidesMeals}</p>`)
+        .addTo(map);
+    });
+
+  
+
+
+    map.on('mouseleave', 'tilequery-points', () => {
+      if (popup) {
+        popup.remove();
+      }
+    });
+  });
+</script>
+</body>
+</html>
