@@ -2,7 +2,7 @@ Map of libraries and their low-cost supporting facilities within Vancouver
 
 This is the README file for the URST 472 Lab 2 project.
 
-The link of the map is : https://wboscoch.github.io/wboscoch-web/Lab2/472Lab2.html
+The link of the map is : https://wboscoch.github.io/wboscoch-web/Lab 2/472Lab2.html
 
 Reflective analysis :
 
