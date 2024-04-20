@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Community Centres and the surrounding Eldercare services in Singapore</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
+  <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css" type="text/css" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.2.0/mapbox-gl-directions.js"></script>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.2.0/mapbox-gl-directions.css" type="text/css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script>
+  mapboxgl.accessToken = 'pk.eyJ1Ijoid2Jvc2NvY2giLCJhIjoiY2xzeWF3cHhyMGMydDJxbzJjbnI3dmZjdSJ9.5ftVvYZFrbDXLrWfyi6mGA';
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/wboscoch/clv7f51tz00m801q15z4qbwpm',
+    center: [103.849,1.358],
+    zoom: 11
+  });
+
+  map.addControl(
+    new MapboxDirections({
+      accessToken: mapboxgl.accessToken
+    }),
+    'top-left'
+  );
+
+  let popup;
+
+map.on('mouseenter', 'communityclubs-2jz55r', (event) => {
+  const feature = event.features[0];
+  popup = new mapboxgl.Popup({ offset: [0, -15] })
+    .setLngLat(feature.geometry.coordinates)
+    .setHTML(
+      `<div style="background-color: white; padding: 10px 20px;"> <!-- Adjusted padding -->
+        <h3>${feature.properties.Name}</h3>
+        <p>${feature.properties.Description}</p>
+      </div>`
+    )
+    .addTo(map);
+});
+
+map.on('mouseleave', 'communityclubs-2jz55r', () => {
+  if (popup) {
+    popup.remove();
+  }
+});
+
+
+
+
+  map.on('click', 'communityclubs-2jz55r', async (event) => {
+  const feature = event.features[0];
+  const point = feature.geometry.coordinates;
+  const tileset = 'wboscoch.1rv04p0c';
+  const radius = 1609; 
+  const limit = 10; 
+  const query = await fetch(
+    `https://api.mapbox.com/v4/${tileset}/tilequery/${point[0]},${point[1]}.json?radius=${radius}&limit=${limit}&access_token=${mapboxgl.accessToken}`,
+    { method: 'GET' }
+  );
+
+
+
+
+  const json = await query.json();
+  const tileQueryPoints = json.features;
+
+  // Clear existing markers before adding new ones
+  map.getSource('tilequery').setData({
+    type: 'FeatureCollection',
+    features: tileQueryPoints
+  });
+
+  
+  map.flyTo({ center: point });
+
+  // Zoom the map to an appropriate level to show the results
+
+  map.zoomTo(11);
+});
+
+
+
+
+
+  map.on('load', () => {
+    const geocoder = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl,
+      zoom: 11,
+      placeholder: 'Enter an address or place name',
+      bbox: [103.591791, 1.130475, 104.085903, 1.481749] // Singapore bounding box
+    });
+    map.addControl(geocoder, 'top-left');
+    const marker = new mapboxgl.Marker({
+      'color': '#008000'
+    });
+    geocoder.on('result', async (event) => {
+      const point = event.result.center;
+      const tileset = 'wboscoch.1rv04p0c';
+      const radius = 1609;
+      const limit = 50;
+      marker.setLngLat(point).addTo(map);
+      const query = await fetch(
+        `https://api.mapbox.com/v4/${tileset}/tilequery/${point[0]},${point[1]}.json?radius=${radius}&limit=${limit}&access_token=${mapboxgl.accessToken}`,
+        { method: 'GET' }
+      );
+      const json = await query.json();
+      map.getSource('tilequery').setData(json);
+    });
+    map.addSource('tilequery', {
+      type: 'geojson',
+      data: {
+        'type': 'FeatureCollection',
+        'features': []
+      }
+    });
+    map.addLayer({
+      id: 'tilequery-points',
+      type: 'circle',
+      source: 'tilequery',
+      paint: {
+        'circle-stroke-color': 'white',
+        'circle-stroke-width': {
+          stops: [
+            [0, 0.1],
+            [18, 3]
+          ],
+          base: 5
+        },
+        'circle-radius': {
+          stops: [
+            [12, 5],
+            [22, 180]
+          ],
+          base: 5
+        },
+        'circle-color': [
+          'match',
+          ['get', 'provides_meals'],
+          'False',
+          '#FF0000',
+          'True',
+          '#9ACD32',
+          '#0080FF'
+        ]
+      }
+    });
+    map.addControl(new mapboxgl.NavigationControl());
+
+    
+
+
+    map.on('mouseenter', 'tilequery-points', (event) => {
+      const feature = event.features[0];
+      const description = feature.properties.Description;
+      const programName = feature.properties.Name;
+      
+      popup = new mapboxgl.Popup({ offset: [0, -15] })
+        .setLngLat(feature.geometry.coordinates)
+        .setHTML(`<p>ProgramName: ${programName}</p><p>Description: ${description}`)
+        .addTo(map);
+    });
+
+  
+
+
+    map.on('mouseleave', 'tilequery-points', () => {
+      if (popup) {
+        popup.remove();
+      }
+    });
+  });
+</script>
+</body>
+</html>
